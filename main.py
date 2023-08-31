@@ -14,7 +14,6 @@ client = pymongo.MongoClient("mongodb://localhost:27017/")
 DB = client["pymongodb"]
 userCollection = DB["user"]
 
-
 def ResponseModel(success: bool, message: str, data=[]):
     return jsonable_encoder(
         {
