@@ -5,7 +5,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field
 import pymongo
-import json
+import json  
 from bson.json_util import dumps
 
 
@@ -13,6 +13,7 @@ app = FastAPI()
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 DB = client["pymongodb"]
 userCollection = DB["user"]
+
 
 def ResponseModel(success: bool, message: str, data=[]):
     return jsonable_encoder(
@@ -44,6 +45,7 @@ class User(BaseModel):
 
 class GetSingleUserByMail(BaseModel):
     email: str = Field(examples=["Foo@mail.com"])
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -83,8 +85,18 @@ def signup(item: User):
 
 # GET USER DETAILS
 @app.get("/user/{userId}")
-async def getUserById(userId: str):
+async def getUserDetails(userId: str):
     existUser = json.loads(dumps(userCollection.find({"_id": ObjectId(userId)})))
+    if existUser and len(existUser) > 0:
+        return ResponseModel(True, "User Details Found", existUser)
+    else:
+        return ResponseModel(False, "User Not Found")
+
+
+# GET USER LIST
+@app.get("/users?filter={filter}&search={search}&offset={offset}")
+async def getUsers(filter="", search="", offset=0):
+    existUser = json.loads(dumps(userCollection.find()))
     if existUser and len(existUser) > 0:
         return ResponseModel(True, "User Details Found", existUser)
     else:
@@ -93,7 +105,7 @@ async def getUserById(userId: str):
 
 # UPDATE USER DETAILS
 @app.put("/user/{userId}")
-async def getUserById(item: UpdateUser, userId: str):
+async def updateUserDetails(item: UpdateUser, userId: str):
     updatedData = userCollection.update_one(
         {"_id": ObjectId(userId)},
         {"$set": {"email": item.email, "name": item.name}},
@@ -104,9 +116,9 @@ async def getUserById(item: UpdateUser, userId: str):
         return ResponseModel(False, "Unable to  Updated User Details")
 
 
-# DELTE USER
+# DELETE USER
 @app.delete("/user/{userId}")
-async def getUserById(userId: str):
+async def deleteUser(userId: str):
     deleted = userCollection.delete_one(
         {"_id": ObjectId(userId)},
     )
